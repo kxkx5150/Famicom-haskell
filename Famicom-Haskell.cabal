@@ -1,0 +1,71 @@
+name:                Famicom-Haskell
+version:             0.1.0.0
+homepage:            https://github.com/dbousamra/Famicom-Haskell#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Kunihiro Ando
+copyright:           2022 Kunihiro Ando
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Emulator
+                     , Emulator.Nes
+                     , Emulator.CPU
+                     , Emulator.Cartridge
+                     , Emulator.Mapper
+                     , Emulator.Mapper.Mapper2
+                     , Emulator.Opcode
+                     , Emulator.Util
+                     , Emulator.Trace
+  default-extensions: Strict
+  ghc-options:       -O2
+                     -fno-warn-name-shadowing
+                     -fwarn-unused-imports
+                    --  -fllvm
+                     -funbox-strict-fields
+  build-depends:       base >= 4.7 && < 5
+                     , mtl
+                     , vector
+                     , bytestring
+                     , monad-loops
+                     , containers
+
+
+  default-language:    Haskell2010
+
+executable Famicom-Haskell
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  default-extensions: Strict
+  ghc-options:        -O2
+                      -- -fllvm
+                      -funbox-strict-fields
+  build-depends:       base >= 4.7 && < 5
+                     , Famicom-Haskell
+                     , mtl
+                     , text
+                     , vector
+                     , bytestring
+                     , sdl2
+                     , containers
+
+test-suite Famicom-Haskell-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:       SpecHelper
+                     , Nestest.Parsing
+                     , Nestest.Spec
+  build-depends:       base
+                     , Famicom-Haskell
+                     , bytestring
+                     , parsec
+                     , tasty
+                     , tasty-hunit
+  ghc-options:         -fforce-recomp
+  default-language:    Haskell2010
