@@ -57,36 +57,37 @@ loadOp = do
 
 getAddr :: AddressMode -> Emulator (Bool, Word16)
 getAddr mode = case mode of
-  Absolute -> do
+  IMM -> do
+    pcv <- loadCpu pc
+    pure (False, pcv + 1)
+  IMP -> pure (False, 0)
+  ABS -> do
     pcv   <- loadCpu pc
     addrV <- readCpuMemory16 (pcv + 1)
     pure (False, addrV)
-  AbsoluteX -> do
+  ABX -> do
     pcv <- loadCpu pc
     xv  <- loadCpu x
     v   <- readCpuMemory16 (pcv + 1)
     let addrV       = v + toWord16 xv
     let pageCrossed = ((addrV - toWord16 xv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
-  AbsoluteY -> do
+  ABY -> do
     pcv <- loadCpu pc
     yv  <- loadCpu y
     v   <- readCpuMemory16 (pcv + 1)
     let addrV       = v + toWord16 yv
     let pageCrossed = ((addrV - toWord16 yv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
-  Accumulator -> pure (False, 0)
-  Immediate   -> do
-    pcv <- loadCpu pc
-    pure (False, pcv + 1)
-  Implied  -> pure (False, 0)
-  Indirect -> do
+  ACC -> pure (False, 0)
+
+  IND         -> do
     pcv  <- loadCpu pc
     addr <- readCpuMemory16 (pcv + 1)
     lo   <- readCpuMemory8 addr
     hi   <- readCpuMemory8 $ (addr .&. 0xFF00) .|. toWord16 (toWord8 addr + 1)
     pure (False, makeW16 lo hi)
-  IndirectIndexed -> do
+  IZY -> do
     pcv <- loadCpu pc
     yv  <- loadCpu y
     v   <- readCpuMemory8 $ pcv + 1
@@ -96,7 +97,7 @@ getAddr mode = case mode of
     let addrV       = (makeW16 lo hi) + toWord16 yv
     let pageCrossed = ((addrV - toWord16 yv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
-  IndexedIndirect -> do
+  IZX -> do
     pcv <- loadCpu pc
     xv  <- loadCpu x
     v   <- readCpuMemory8 $ pcv + 1
@@ -104,22 +105,22 @@ getAddr mode = case mode of
     hi  <- readCpuMemory8 $ ((toWord16 (v + xv)) .&. 0xFF00) .|. toWord16
       (toWord8 (toWord16 (v + xv)) + 1)
     pure (False, (makeW16 lo hi))
-  Relative -> do
+  REL -> do
     pcv      <- loadCpu pc
     offset16 <- readCpuMemory16 (pcv + 1)
     let offset8 = firstNibble offset16
     let diff    = if offset8 < 0x80 then 0 else 0x100
     pure (False, pcv + 2 + offset8 - diff)
-  ZeroPage -> do
+  ZP -> do
     pcv <- loadCpu pc
     v   <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 v)
-  ZeroPageX -> do
+  ZPX -> do
     pcv <- loadCpu pc
     xv  <- loadCpu x
     v   <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 $ v + xv)
-  ZeroPageY -> do
+  ZPY -> do
     pcv <- loadCpu pc
     yv  <- loadCpu y
     v   <- readCpuMemory8 (pcv + 1)
@@ -155,13 +156,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setZN av'
   ASL -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   BCC -> do
@@ -271,13 +272,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setZN v
   LSR -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   NOP -> do
@@ -311,24 +312,24 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     storeCpu pc (paddr + 1)
   ROR -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   ROL -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   SBC -> do
@@ -423,13 +424,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag Overflow doesOverflow
   RLA -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
@@ -440,13 +441,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setZN av'
   RRA -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
@@ -463,13 +464,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag Overflow doesOverflow
   SLO -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
@@ -480,13 +481,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setZN newAv
   SRE -> do
     v <- case mode of
-      Accumulator -> loadCpu a
+      ACC -> loadCpu a
       _           -> readCpuMemory8 addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
-      Accumulator -> storeCpu a shiftedV
+      ACC -> storeCpu a shiftedV
       _           -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 

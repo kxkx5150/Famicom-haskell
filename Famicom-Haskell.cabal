@@ -1,6 +1,6 @@
 name:                Famicom-Haskell
 version:             0.1.0.0
-homepage:            https://github.com/dbousamra/Famicom-Haskell#readme
+homepage:            https://github.com/kxkx5150/Famicom-haskell
 license:             BSD3
 license-file:        LICENSE
 author:              Kunihiro Ando
@@ -15,7 +15,7 @@ library
   exposed-modules:     Emulator
                      , Emulator.Mem
                      , Emulator.CPU
-                     , Emulator.Cartridge
+                     , Emulator.Rom
                      , Emulator.Mapper
                      , Emulator.Mapper.Mapper2
                      , Emulator.Opcode

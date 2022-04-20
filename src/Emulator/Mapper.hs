@@ -4,7 +4,7 @@ module Emulator.Mapper
   ) where
 
 import           Data.Word
-import           Emulator.Cartridge
+import           Emulator.Rom
 import qualified Emulator.Mapper.Mapper2       as Mapper2
 
 

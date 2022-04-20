@@ -6,7 +6,7 @@ import qualified Data.ByteString        as BS
 import           Emulator.CPU           (runCpuT)
 import           Emulator.Mem
 import qualified Emulator.Trace         as Trace
-import           Emulator.Util          (prettifyWord16)
+import           Emulator.Util          (prettifyWordW)
 import           Nestest.Parsing        (parseTrace)
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -28,5 +28,5 @@ test = testCase "nestest" $ do
         (x:xs) -> case parse parseTrace "nestest.log" x of
           Left e -> liftIO $ assertFailure $ "Failed to parse " ++ show e
           Right nestestTrace -> do
-            liftIO $ assertEqual ("Execution at " ++ prettifyWord16 (Trace.pc trace)) nestestTrace trace
+            liftIO $ assertEqual ("Execution at " ++ prettifyWordW (Trace.pc trace)) nestestTrace trace
             emulate xs

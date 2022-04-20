@@ -1,7 +1,7 @@
 
 module Emulator.Util
-  ( prettifyWord16
-  , prettifyWord8
+  ( prettifyWordW
+  , prettifyWord
   , makeW16
   , toWord8
   , toWord16
@@ -27,11 +27,11 @@ import           Data.Word                      ( Word16
                                                 )
 import           Text.Printf                    ( printf )
 
-prettifyWord16 :: Word16 -> String
-prettifyWord16 = printf "%04X"
+prettifyWordW :: Word16 -> String
+prettifyWordW = printf "%04X"
 
-prettifyWord8 :: Word8 -> String
-prettifyWord8 = printf "%02X"
+prettifyWord :: Word8 -> String
+prettifyWord = printf "%02X"
 
 makeW16 :: Word8 -> Word8 -> Word16
 makeW16 lo hi = toWord16 lo .|. toWord16 hi `shiftL` 8

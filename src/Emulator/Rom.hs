@@ -1,4 +1,4 @@
-module Emulator.Cartridge
+module Emulator.Rom
   ( Cartridge(..)
   , Mirror(..)
   , parse
@@ -51,13 +51,13 @@ parseHeader bs = INesFileHeader (fromIntegral $ BS.index bs 3)
 parse :: BS.ByteString -> IO Cartridge
 parse bs = do
   let (INesFileHeader _ numPrg numChr ctrl1 ctrl2 _) = parseHeader bs
-  let prgOffset = numPrg * prgRomSize
-  let prgRom = sliceBS headerSize (headerSize + prgOffset) bs
-  let chrOffset = numChr * chrRomSize
+  let prgOffset = numPrg * 0x4000
+  let prgRom = sliceBS 0x10 (0x10 + prgOffset) bs
+  let chrOffset = numChr * 0x2000
   let chrRom = if numChr == 0
-        then (BS.replicate chrRomSize 0)
-        else sliceBS (headerSize + prgOffset)
-                     (headerSize + prgOffset + chrOffset)
+        then (BS.replicate 0x2000 0)
+        else sliceBS (0x10 + prgOffset)
+                     (0x10 + prgOffset + chrOffset)
                      bs
 
   chr  <- VU.thaw $ VU.fromList $ BS.unpack chrRom
@@ -66,16 +66,7 @@ parse bs = do
 
   let mirrorV = (ctrl1 .&. 1) .|. (((ctrl1 `shiftR` 3) .&. 1) `shiftR` 1)
   mirror <- newIORef $ toEnum mirrorV
-
   let mapper = (ctrl1 `shiftR` 4) .|. ((ctrl2 `shiftR` 4) `shiftL` 4)
-
   pure $ Cartridge chr prg sram mirror mapper
 
-headerSize :: Int
-headerSize = 0x10
 
-prgRomSize :: Int
-prgRomSize = 0x4000
-
-chrRomSize :: Int
-chrRomSize = 0x2000

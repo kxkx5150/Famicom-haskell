@@ -40,7 +40,7 @@ import           Data.Set                      as Set
 import qualified Data.Vector                   as V
 import qualified Data.Vector.Storable.Mutable  as VUM
 import           Data.Word
-import           Emulator.Cartridge            as Cartridge
+import           Emulator.Rom            as Cartridge
 import qualified Emulator.Mapper               as Mapper
 import           Emulator.Util
 import           Prelude                 hiding ( read

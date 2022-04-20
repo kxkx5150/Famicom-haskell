@@ -10,7 +10,7 @@ module Emulator.Mapper.Mapper2 (
 import           Data.IORef
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import           Data.Word
-import           Emulator.Cartridge          as Cartridge
+import           Emulator.Rom          as Cartridge
 import           Emulator.Util
 import           Prelude                     hiding (read)
 
@@ -38,7 +38,7 @@ read (Mapper2 Cartridge {..} _ prgBank1 prgBank2) addr
     prgBank1V <- readIORef prgBank1
     VUM.read prgRom ((prgBank1V * 0x4000) + (addr' - 0x8000))
   | addr' >= 0x6000 = VUM.read sram (addr' - 0x6000)
-  | otherwise = error $ "Erroneous cart read detected!: " ++ prettifyWord16 addr
+  | otherwise = error $ "Erroneous cart read detected!: " ++ prettifyWordW addr
   where addr' = fromIntegral addr
 
 write :: Mapper2 -> Word16 -> Word8 -> IO ()
@@ -46,5 +46,5 @@ write (Mapper2 Cartridge {..} prgBanks prgBank1 _) addr v
   | addr' < 0x2000 = VUM.write chrRom addr' v
   | addr' >= 0x8000 = modifyIORef prgBank1 (const $ toInt v `rem` prgBanks)
   | addr' >= 0x6000 = VUM.write sram (addr' - 0x6000) v
-  | otherwise = error $ "Erroneous cart write detected!" ++ prettifyWord16 addr
+  | otherwise = error $ "Erroneous cart write detected!" ++ prettifyWordW addr
   where addr' = fromIntegral addr
