@@ -4,7 +4,7 @@ module Nestest.Spec where
 import           Control.Monad.IO.Class
 import qualified Data.ByteString        as BS
 import           Emulator.CPU           (runCpuT)
-import           Emulator.Nes
+import           Emulator.Mem
 import qualified Emulator.Trace         as Trace
 import           Emulator.Util          (prettifyWord16)
 import           Nestest.Parsing        (parseTrace)

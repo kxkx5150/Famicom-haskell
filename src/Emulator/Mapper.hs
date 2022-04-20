@@ -1,11 +1,11 @@
-module Emulator.Mapper (
-    Mapper(..)
+module Emulator.Mapper
+  ( Mapper(..)
   , new
-) where
+  ) where
 
 import           Data.Word
 import           Emulator.Cartridge
-import qualified Emulator.Mapper.Mapper2 as Mapper2
+import qualified Emulator.Mapper.Mapper2       as Mapper2
 
 
 data Mapper = Mapper

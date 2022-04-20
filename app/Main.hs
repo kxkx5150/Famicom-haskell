@@ -8,7 +8,7 @@ import           Data.Maybe          (catMaybes)
 import           Data.Set            as Set hiding (foldl)
 import qualified Data.Text           as T
 import           Emulator            (reset, start)
-import           Emulator.Nes
+import           Emulator.Mem
 import           SDL
 import           SDL.Time
 import           System.Environment  (getArgs)

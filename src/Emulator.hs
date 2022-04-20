@@ -1,12 +1,11 @@
-module Emulator (
-    start
-  , reset
-) where
 
-import           Control.Monad
-import           Control.Monad.Loops
-import qualified Emulator.CPU        as CPU
-import           Emulator.Nes
+module Emulator
+  ( start
+  , reset
+  ) where
+
+import qualified Emulator.CPU                  as CPU
+import           Emulator.Mem
 
 start :: Emulator ()
 start = do

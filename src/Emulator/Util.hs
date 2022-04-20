@@ -1,6 +1,6 @@
 
-module Emulator.Util (
-    prettifyWord16
+module Emulator.Util
+  ( prettifyWord16
   , prettifyWord8
   , makeW16
   , toWord8
@@ -10,14 +10,22 @@ module Emulator.Util (
   , splitW16
   , sliceBS
   , catMaybesV
-) where
+  ) where
 
-import           Data.Bits       (shiftL, shiftR, (.&.), (.|.))
-import qualified Data.ByteString as BS
-import           Data.Maybe      (fromJust, isJust)
-import           Data.Vector     as V
-import           Data.Word       (Word16, Word8)
-import           Text.Printf     (printf)
+import           Data.Bits                      ( (.&.)
+                                                , (.|.)
+                                                , shiftL
+                                                , shiftR
+                                                )
+import qualified Data.ByteString               as BS
+import           Data.Maybe                     ( fromJust
+                                                , isJust
+                                                )
+import           Data.Vector                   as V
+import           Data.Word                      ( Word16
+                                                , Word8
+                                                )
+import           Text.Printf                    ( printf )
 
 prettifyWord16 :: Word16 -> String
 prettifyWord16 = printf "%04X"

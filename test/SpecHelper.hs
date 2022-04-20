@@ -7,7 +7,7 @@ import           Control.Monad.IO.Class
 import qualified Data.ByteString        as BS
 import           Data.Word
 import           Emulator
-import           Emulator.Nes
+import           Emulator.Mem
 import           Test.Tasty.HUnit
 
 run :: FilePath -> Emulator Word8 -> Word8 -> IO ()
