@@ -7,6 +7,7 @@ module Emulator.Trace
   ) where
 
 import           Data.Word
+import           Emulator.Nes
 import           Emulator.Mem
 import           Emulator.Opcode
 import           Text.Printf
@@ -31,16 +32,16 @@ instance Show Trace where
 
 mkTrace :: Opcode -> Emulator Trace
 mkTrace op = do
-  pcv    <- loadCpu pc
+  pcv    <- loadReg pc
   a0     <- readCpuMemory8 pcv
   a1     <- readCpuMemory8 (pcv + 1)
   a2     <- readCpuMemory8 (pcv + 2)
-  spv    <- loadCpu sp
-  av     <- loadCpu a
-  xv     <- loadCpu x
-  yv     <- loadCpu y
-  pv     <- loadCpu p
-  cycles <- loadCpu cpuCycles
+  spv    <- loadReg sp
+  av     <- loadReg a
+  xv     <- loadReg x
+  yv     <- loadReg y
+  pv     <- loadReg p
+  cycles <- loadReg cpuCycles
   let instrLength = len op
   let a1R         = if instrLength < 2 then 0x0 else a1
   let a2R         = if instrLength < 3 then 0x0 else a2

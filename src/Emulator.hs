@@ -1,17 +1,18 @@
 
 module Emulator
-  ( start
+  ( runEmulator
   , reset
   ) where
 
+import           Emulator.Nes
 import qualified Emulator.CPU                  as CPU
-import           Emulator.Mem
 
-start :: Emulator ()
-start = do
+runEmulator :: Emulator ()
+runEmulator = do
   cycles <- CPU.runCpu
   return ()
 
 reset :: Emulator ()
 reset = CPU.reset
+
 

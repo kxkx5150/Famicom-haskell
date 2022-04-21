@@ -3,6 +3,7 @@ module Nestest.Spec where
 
 import           Control.Monad.IO.Class
 import qualified Data.ByteString        as BS
+import           Emulator.Nes
 import           Emulator.CPU           (runCpuT)
 import           Emulator.Mem
 import qualified Emulator.Trace         as Trace
@@ -16,8 +17,8 @@ test :: TestTree
 test = testCase "nestest" $ do
   rom <- BS.readFile "roms/tests/cpu/nestest/nestest.nes"
   lines <- lines <$> readFile "roms/tests/cpu/nestest/nestest.log"
-  runEmulator rom $ do
-    storeCpu pc 0xC000
+  initNes rom $ do
+    storeReg pc 0xC000
     emulate lines
   where
     emulate :: [String] -> Emulator ()
