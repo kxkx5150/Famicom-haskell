@@ -7,7 +7,6 @@ module Emulator.Mem
   ( Nes(..)
   , CPU(..)
   , Emulator(..)
-  , Flag(..)
   , new
   , runEmulator
   , debug
@@ -40,8 +39,8 @@ import           Data.Set                      as Set
 import qualified Data.Vector                   as V
 import qualified Data.Vector.Storable.Mutable  as VUM
 import           Data.Word
-import           Emulator.Rom            as Cartridge
 import qualified Emulator.Mapper               as Mapper
+import           Emulator.Rom                  as Cartridge
 import           Emulator.Util
 import           Prelude                 hiding ( read
                                                 , replicate
@@ -49,17 +48,6 @@ import           Prelude                 hiding ( read
 
 newtype Emulator a = Emulator { unNes :: ReaderT Nes IO a }
   deriving (Monad, Applicative, Functor, MonadIO, MonadReader Nes)
-
-data Flag
-  = Negative
-  | Overflow
-  | Unused
-  | Break
-  | Decimal
-  | InterruptDisable
-  | Zero
-  | Carry
-  deriving (Enum)
 
 data Nes = Nes
   { cpu    :: CPU
@@ -78,14 +66,6 @@ data CPU = CPU
   , ram       :: VUM.IOVector Word8
   }
 
-runEmulator :: BS.ByteString -> Emulator a -> IO a
-runEmulator bs (Emulator reader) = do
-  cart <- Cartridge.parse bs
-  nes  <- new cart
-  runReaderT reader nes
-
-debug :: String -> Emulator ()
-debug = liftIO . putStrLn
 
 {-# INLINE with #-}
 with :: (Nes -> b) -> (b -> IO a) -> Emulator a
@@ -105,6 +85,15 @@ storeCpu field v = with (field . cpu) (`modifyIORef'` const v)
 modifyCpu :: (CPU -> IORef b) -> (b -> b) -> Emulator ()
 modifyCpu field v = with (field . cpu) (`modifyIORef'` v)
 
+
+runEmulator :: BS.ByteString -> Emulator a -> IO a
+runEmulator bs (Emulator reader) = do
+  cart <- Cartridge.parse bs
+  nes  <- new cart
+  runReaderT reader nes
+
+debug :: String -> Emulator ()
+debug = liftIO . putStrLn
 
 readCpuMemory8 :: Word16 -> Emulator Word8
 readCpuMemory8 addr
@@ -140,7 +129,6 @@ writeCpuMemory16 addr value = do
   let (lo, hi) = splitW16 value
   writeCpuMemory8 addr       lo
   writeCpuMemory8 (addr + 1) hi
-
 
 new :: Cartridge -> IO Nes
 new cart = do

@@ -18,7 +18,17 @@ import           Prelude                 hiding ( and
                                                 , compare
                                                 )
 
-
+data Flag
+  = Negative
+  | Overflow
+  | Unused
+  | Break
+  | Decimal
+  | InterruptDisable
+  | Zero
+  | Carry
+  deriving (Enum)
+  
 runCpu :: Emulator Int
 runCpu = do
   startingCycles      <- loadCpu cpuCycles
