@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-# resolver: ghc-9.0.2
+# resolver: ghc-8.0.2
 resolver: nightly-2017-10-02
 
 # User packages to be built.
@@ -40,10 +40,14 @@ packages:
 - '.'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: [
- sdl2-2.3.0.1
-]
-
+extra-deps:
+ - sdl2-2.3.0.1
+ - StateVar-1.1.1.1
+ - exceptions-0.8.3
+ - linear-1.20.9
+ - monad-loops-0.4.3
+ - mtl-2.2.2
+ - vector-0.12.0.3
 # Override default flag values for local packages and extra-deps
 flags: {}
 

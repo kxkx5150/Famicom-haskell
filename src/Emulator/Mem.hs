@@ -82,6 +82,22 @@ writeMem :: Word16 -> Word8 -> Emulator ()
 writeMem addr v =
   with cpu $ \cpu -> VUM.write (ram cpu) (fromIntegral addr `rem` 0x0800) v
 
+loadPpu :: (PPU -> IORef b) -> Emulator b
+loadPpu field = with (field . ppu) readIORef
+
+storePpu :: (PPU -> IORef b) -> b -> Emulator ()
+storePpu field v = with (field . ppu) (`modifyIORef'` const v)
+
+modifyPpu :: (PPU -> IORef b) -> (b -> b) -> Emulator ()
+modifyPpu field v = with (field . ppu) (`modifyIORef'` v)
+
+
+
+
+
+
+
+
 writeDMA :: Word8 -> Emulator ()
 writeDMA v = do
   let startingAddr = toWord16 v `shiftL` 8
@@ -95,14 +111,50 @@ writeDMA v = do
         modifyPpu oamAddress (+ 1)
     )
 
-loadPpu :: (PPU -> IORef b) -> Emulator b
-loadPpu field = with (field . ppu) readIORef
+readOAMData' :: Emulator Word8
+readOAMData' = do
+  addr <- loadPpu oamAddress
+  with ppu $ \ppu -> VUM.read (oamData ppu) (fromIntegral addr `rem` 0x0800)
 
-storePpu :: (PPU -> IORef b) -> b -> Emulator ()
-storePpu field v = with (field . ppu) (`modifyIORef'` const v)
+readOAMData :: Word16 -> Emulator Word8
+readOAMData addr =
+  with ppu $ \ppu -> VUM.read (oamData ppu) (fromIntegral addr)
 
-modifyPpu :: (PPU -> IORef b) -> (b -> b) -> Emulator ()
-modifyPpu field v = with (field . ppu) (`modifyIORef'` v)
+writeOAMAddress :: Word8 -> Emulator ()
+writeOAMAddress = storePpu oamAddress
+
+writeOAMData :: Word8 -> Emulator ()
+writeOAMData v = do
+  addr <- loadPpu oamAddress
+  with ppu $ \ppu -> VUM.write (oamData ppu) (toInt addr) v
+  modifyPpu oamAddress (+ 1)
+
+readMapper :: Word16 -> Emulator Word8
+readMapper addr = with mapper $ \mapper -> Mapper.read mapper addr
+
+writeMapper :: Word16 -> Word8 -> Emulator ()
+writeMapper addr value =
+  with mapper $ \mapper -> Mapper.write mapper addr value
+
+toggleNmi :: Bool -> Emulator ()
+toggleNmi occurred = do
+  storePpu nmiOccurred occurred
+  output <- loadPpu nmiOutput
+  occurred <- loadPpu nmiOccurred
+  previous <- loadPpu nmiPrevious
+  let nmi = output && occurred
+  when (nmi && not previous) $ storePpu nmiDelay 15
+  storePpu nmiPrevious nmi
+
+
+
+
+
+
+
+
+
+
 
 readPpuMemory :: Word16 -> Emulator Word8
 readPpuMemory addr
@@ -122,12 +174,10 @@ writePPUMemory addr v
   where
     addr' = addr `rem` 0x4000
 
-readMapper :: Word16 -> Emulator Word8
-readMapper addr = with mapper $ \mapper -> Mapper.read mapper addr
 
-writeMapper :: Word16 -> Word8 -> Emulator ()
-writeMapper addr value =
-  with mapper $ \mapper -> Mapper.write mapper addr value
+
+
+
 
 readPPURegister :: Word16 -> Emulator Word8
 readPPURegister addr = case addr of
@@ -247,15 +297,6 @@ writeMask v = do
   storePpu intensifyGreens $ testBit v 6
   storePpu intensifyBlues $ testBit v 7
 
-writeOAMAddress :: Word8 -> Emulator ()
-writeOAMAddress = storePpu oamAddress
-
-writeOAMData :: Word8 -> Emulator ()
-writeOAMData v = do
-  addr <- loadPpu oamAddress
-  with ppu $ \ppu -> VUM.write (oamData ppu) (toInt addr) v
-  modifyPpu oamAddress (+ 1)
-
 writeScroll :: Word8 -> Emulator ()
 writeScroll v = do
   wv <- loadPpu writeToggle
@@ -320,21 +361,5 @@ writeScreen (x, y) (r, g, b) = with ppu $ \ppu -> do
   VUM.write (screen ppu) (offset + 1) g
   VUM.write (screen ppu) (offset + 2) b
 
-toggleNmi :: Bool -> Emulator ()
-toggleNmi occurred = do
-  storePpu nmiOccurred occurred
-  output <- loadPpu nmiOutput
-  occurred <- loadPpu nmiOccurred
-  previous <- loadPpu nmiPrevious
-  let nmi = output && occurred
-  when (nmi && not previous) $ storePpu nmiDelay 15
-  storePpu nmiPrevious nmi
 
-readOAMData' :: Emulator Word8
-readOAMData' = do
-  addr <- loadPpu oamAddress
-  with ppu $ \ppu -> VUM.read (oamData ppu) (fromIntegral addr `rem` 0x0800)
 
-readOAMData :: Word16 -> Emulator Word8
-readOAMData addr =
-  with ppu $ \ppu -> VUM.read (oamData ppu) (fromIntegral addr)

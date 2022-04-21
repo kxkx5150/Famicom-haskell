@@ -302,3 +302,4 @@ storeReg field v = with (field . cpu) (`modifyIORef'` const v)
 
 modReg :: (CPU -> IORef b) -> (b -> b) -> Emulator ()
 modReg field v = with (field . cpu) (`modifyIORef'` v)
+
