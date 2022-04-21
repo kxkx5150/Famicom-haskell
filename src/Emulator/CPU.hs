@@ -1,23 +1,26 @@
 module Emulator.CPU
-  ( reset
-  , runCpu
-  , runCpuT
-  ) where
+  ( reset,
+    runCpu,
+    runCpuT,
+  )
+where
 
-import           Control.Monad
-import           Data.Bits               hiding ( bit )
-import           Data.Word
-import           Emulator.Mem
-import           Emulator.Nes
-import           Emulator.Opcode
-import           Emulator.Trace                 ( Trace
-                                                , mkTrace
-                                                , renderTrace
-                                                )
-import           Emulator.Util
-import           Prelude                 hiding ( and
-                                                , compare
-                                                )
+import Control.Monad
+import Data.Bits hiding (bit)
+import Data.Word
+import Emulator.Mem
+import Emulator.Nes
+import Emulator.Opcode
+import Emulator.Trace
+  ( Trace,
+    mkTrace,
+    renderTrace,
+  )
+import Emulator.Util
+import Prelude hiding
+  ( and,
+    compare,
+  )
 
 data Flag
   = Negative
@@ -32,8 +35,8 @@ data Flag
 
 runCpu :: Emulator Int
 runCpu = do
-  startingCycles      <- loadReg cpuCycles
-  opcode              <- loadOp
+  startingCycles <- loadReg cpuCycles
+  opcode <- loadOp
   (pageCrossed, addr) <- getAddr (mode opcode)
   incPc opcode
   modReg cpuCycles (+ getCycles opcode pageCrossed)
@@ -43,9 +46,9 @@ runCpu = do
 
 runCpuT :: Emulator (Int, Trace)
 runCpuT = do
-  startingCycles      <- loadReg cpuCycles
-  opcode              <- loadOp
-  trace               <- mkTrace opcode
+  startingCycles <- loadReg cpuCycles
+  opcode <- loadOp
+  trace <- mkTrace opcode
   (pageCrossed, addr) <- getAddr (mode opcode)
   incPc opcode
   modReg cpuCycles (+ getCycles opcode pageCrossed)
@@ -58,12 +61,12 @@ reset = do
   v <- readMemW 0xFFFC
   storeReg pc v
   storeReg sp 0xFD
-  storeReg p  0x24
+  storeReg p 0x24
 
 loadOp :: Emulator Opcode
 loadOp = do
   pcv <- loadReg pc
-  av  <- readCpuMemory8 pcv
+  av <- readCpuMemory8 pcv
   pure $ decodeOpcode av
 
 getAddr :: AddressMode -> Emulator (Bool, Word16)
@@ -73,73 +76,79 @@ getAddr mode = case mode of
     pure (False, pcv + 1)
   IMP -> pure (False, 0)
   ABS -> do
-    pcv   <- loadReg pc
+    pcv <- loadReg pc
     addrV <- readMemW (pcv + 1)
     pure (False, addrV)
   ABX -> do
     pcv <- loadReg pc
-    xv  <- loadReg x
-    v   <- readMemW (pcv + 1)
-    let addrV       = v + toWord16 xv
+    xv <- loadReg x
+    v <- readMemW (pcv + 1)
+    let addrV = v + toWord16 xv
     let pageCrossed = ((addrV - toWord16 xv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
   ABY -> do
     pcv <- loadReg pc
-    yv  <- loadReg y
-    v   <- readMemW (pcv + 1)
-    let addrV       = v + toWord16 yv
+    yv <- loadReg y
+    v <- readMemW (pcv + 1)
+    let addrV = v + toWord16 yv
     let pageCrossed = ((addrV - toWord16 yv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
   ACC -> pure (False, 0)
-
   IND -> do
-    pcv  <- loadReg pc
+    pcv <- loadReg pc
     addr <- readMemW (pcv + 1)
-    lo   <- readCpuMemory8 addr
-    hi   <- readCpuMemory8 $ (addr .&. 0xFF00) .|. toWord16 (toWord8 addr + 1)
+    lo <- readCpuMemory8 addr
+    hi <- readCpuMemory8 $ (addr .&. 0xFF00) .|. toWord16 (toWord8 addr + 1)
     pure (False, makeW16 lo hi)
   IZY -> do
     pcv <- loadReg pc
-    yv  <- loadReg y
-    v   <- readCpuMemory8 $ pcv + 1
-    lo  <- readCpuMemory8 (toWord16 v)
-    hi  <- readCpuMemory8 $ ((toWord16 v) .&. 0xFF00) .|. toWord16
-      (toWord8 (toWord16 v) + 1)
-    let addrV       = (makeW16 lo hi) + toWord16 yv
+    yv <- loadReg y
+    v <- readCpuMemory8 $ pcv + 1
+    lo <- readCpuMemory8 (toWord16 v)
+    hi <-
+      readCpuMemory8 $
+        ((toWord16 v) .&. 0xFF00)
+          .|. toWord16
+            (toWord8 (toWord16 v) + 1)
+    let addrV = (makeW16 lo hi) + toWord16 yv
     let pageCrossed = ((addrV - toWord16 yv) .&. 0xFF00) /= (addrV .&. 0xFF00)
     pure (pageCrossed, addrV)
   IZX -> do
     pcv <- loadReg pc
-    xv  <- loadReg x
-    v   <- readCpuMemory8 $ pcv + 1
-    lo  <- readCpuMemory8 (toWord16 (v + xv))
-    hi  <- readCpuMemory8 $ ((toWord16 (v + xv)) .&. 0xFF00) .|. toWord16
-      (toWord8 (toWord16 (v + xv)) + 1)
+    xv <- loadReg x
+    v <- readCpuMemory8 $ pcv + 1
+    lo <- readCpuMemory8 (toWord16 (v + xv))
+    hi <-
+      readCpuMemory8 $
+        ((toWord16 (v + xv)) .&. 0xFF00)
+          .|. toWord16
+            (toWord8 (toWord16 (v + xv)) + 1)
     pure (False, (makeW16 lo hi))
   REL -> do
-    pcv      <- loadReg pc
+    pcv <- loadReg pc
     offset16 <- readMemW (pcv + 1)
     let offset8 = firstNibble offset16
-    let diff    = if offset8 < 0x80 then 0 else 0x100
+    let diff = if offset8 < 0x80 then 0 else 0x100
     pure (False, pcv + 2 + offset8 - diff)
   ZP -> do
     pcv <- loadReg pc
-    v   <- readCpuMemory8 (pcv + 1)
+    v <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 v)
   ZPX -> do
     pcv <- loadReg pc
-    xv  <- loadReg x
-    v   <- readCpuMemory8 (pcv + 1)
+    xv <- loadReg x
+    v <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 $ v + xv)
   ZPY -> do
     pcv <- loadReg pc
-    yv  <- loadReg y
-    v   <- readCpuMemory8 (pcv + 1)
+    yv <- loadReg y
+    v <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 $ v + yv)
 
 incPc :: Opcode -> Emulator ()
 incPc opcode = modReg pc (+ instrLength)
-  where instrLength = fromIntegral $ len opcode
+  where
+    instrLength = fromIntegral $ len opcode
 
 getCycles :: Opcode -> Bool -> Int
 getCycles opcode pageCrossed =
@@ -157,24 +166,24 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     let shouldCarry = toInt av + toInt bv + toInt cv > 0xFF
     let doesOverflow =
           ((av `xor` bv) .&. 0x80) == 0 && ((av `xor` av') .&. 0x80) /= 0
-    setFlag Carry    shouldCarry
+    setFlag Carry shouldCarry
     setFlag Overflow doesOverflow
   AND -> do
     av <- loadReg a
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
   ASL -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   BCC -> do
     branch (not <$> getFlag Carry) addr
@@ -216,15 +225,15 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   CLV -> do
     setFlag Overflow False
   CMP -> do
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     compare av v
   CPX -> do
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     xv <- loadReg x
     compare xv v
   CPY -> do
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     yv <- loadReg y
     compare yv v
   DEC -> do
@@ -243,7 +252,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     storeReg y value
     setZN value
   EOR -> do
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     let newAv = av `xor` v
     storeReg a newAv
@@ -284,13 +293,13 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   LSR -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   NOP -> do
     pure ()
@@ -308,7 +317,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     v <- pull
     storeReg p ((v .&. 0xEF) .|. 0x20)
   ORA -> do
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     let newAv = av .|. v
     storeReg a newAv
@@ -324,24 +333,24 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   ROR -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   ROL -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
   SBC -> do
     av <- loadReg a
@@ -353,7 +362,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     let shouldCarry = toInt av - toInt bv - toInt (1 - cv) >= 0
     let doesOverflow =
           ((av `xor` bv) .&. 0x80) /= 0 && ((av `xor` av') .&. 0x80) /= 0
-    setFlag Carry    shouldCarry
+    setFlag Carry shouldCarry
     setFlag Overflow doesOverflow
   SEC -> do
     setFlag Carry True
@@ -413,7 +422,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     writeCpuMemory8 addr value
     setZN value
 
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     compare av v
   ISC -> do
@@ -431,35 +440,35 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     let shouldCarry = toInt av - toInt bv - toInt (1 - cv) >= 0
     let doesOverflow =
           ((av `xor` bv) .&. 0x80) /= 0 && ((av `xor` av') .&. 0x80) /= 0
-    setFlag Carry    shouldCarry
+    setFlag Carry shouldCarry
     setFlag Overflow doesOverflow
   RLA -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
     av <- loadReg a
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
   RRA -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
     av <- loadReg a
@@ -471,21 +480,21 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     let shouldCarry = toInt av + toInt bv + toInt cv > 0xFF
     let doesOverflow =
           ((av `xor` bv) .&. 0x80) == 0 && ((av `xor` av') .&. 0x80) /= 0
-    setFlag Carry    shouldCarry
+    setFlag Carry shouldCarry
     setFlag Overflow doesOverflow
   SLO -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     let newAv = av .|. v
     storeReg a newAv
@@ -493,23 +502,23 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   SRE -> do
     v <- case mode of
       ACC -> loadReg a
-      _   -> readCpuMemory8 addr
+      _ -> readCpuMemory8 addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _   -> writeCpuMemory8 addr shiftedV
+      _ -> writeCpuMemory8 addr shiftedV
     setZN shiftedV
 
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     av <- loadReg a
     let newAv = av `xor` v
     storeReg a newAv
     setZN newAv
   ANC -> do
     av <- loadReg a
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
@@ -529,7 +538,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     xv <- loadReg x
     yv <- loadReg y
     let result = xv .&. (toWord8 addr + 1)
-    let temp   = (toWord8 addr - yv) .&. 255
+    let temp = (toWord8 addr - yv) .&. 255
     if yv + temp <= 255
       then writeCpuMemory8 addr result
       else do
@@ -542,7 +551,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   AXS -> do
     av <- loadReg a
     xv <- loadReg x
-    v  <- readCpuMemory8 addr
+    v <- readCpuMemory8 addr
     let anded = av .&. xv
     let newXv = anded - v
     storeReg x newXv
@@ -567,7 +576,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
 
 branch :: Emulator Bool -> Word16 -> Emulator ()
 branch cond addr = do
-  cv  <- cond
+  cv <- cond
   pcv <- loadReg pc
   when cv $ do
     storeReg pc addr
@@ -609,7 +618,8 @@ setFlag :: Flag -> Bool -> Emulator ()
 setFlag flag b = do
   v <- loadReg p
   storeReg p (opBit v (7 - fromEnum flag))
-  where opBit = if b then setBit else clearBit
+  where
+    opBit = if b then setBit else clearBit
 
 setZ :: Word8 -> Emulator ()
 setZ v = setFlag Zero (v == 0)
@@ -627,6 +637,3 @@ compare :: Word8 -> Word8 -> Emulator ()
 compare a b = do
   setZN $ a - b
   setFlag Carry (a >= b)
-
-
-

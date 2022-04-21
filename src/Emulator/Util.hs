@@ -1,31 +1,34 @@
-
 module Emulator.Util
-  ( prettifyWordW
-  , prettifyWord
-  , makeW16
-  , toWord8
-  , toWord16
-  , toInt
-  , firstNibble
-  , splitW16
-  , sliceBS
-  , catMaybesV
-  ) where
+  ( prettifyWordW,
+    prettifyWord,
+    makeW16,
+    toWord8,
+    toWord16,
+    toInt,
+    firstNibble,
+    splitW16,
+    sliceBS,
+    catMaybesV,
+  )
+where
 
-import           Data.Bits                      ( (.&.)
-                                                , (.|.)
-                                                , shiftL
-                                                , shiftR
-                                                )
-import qualified Data.ByteString               as BS
-import           Data.Maybe                     ( fromJust
-                                                , isJust
-                                                )
-import           Data.Vector                   as V
-import           Data.Word                      ( Word16
-                                                , Word8
-                                                )
-import           Text.Printf                    ( printf )
+import Data.Bits
+  ( shiftL,
+    shiftR,
+    (.&.),
+    (.|.),
+  )
+import qualified Data.ByteString as BS
+import Data.Maybe
+  ( fromJust,
+    isJust,
+  )
+import Data.Vector as V
+import Data.Word
+  ( Word16,
+    Word8,
+  )
+import Text.Printf (printf)
 
 prettifyWordW :: Word16 -> String
 prettifyWordW = printf "%04X"
@@ -56,5 +59,3 @@ sliceBS from to xs = BS.take (to - from) (BS.drop from xs)
 
 catMaybesV :: Vector (Maybe a) -> Vector a
 catMaybesV = V.map fromJust . V.filter isJust
-
-
