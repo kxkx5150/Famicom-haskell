@@ -10,7 +10,8 @@ import           Data.Set                      as Set
 import qualified Data.Text                     as T
 
 import           Emulator                       ( reset
-                                                , runEmulator
+                                                , step
+                                                , stepFrame
                                                 )
 import           Emulator.Nes
 import           SDL
@@ -40,7 +41,7 @@ main = do
 appLoop :: Int -> SDL.Renderer -> SDL.Window -> Emulator ()
 appLoop frames renderer window = do
   intents <- eventsToIntents <$> SDL.pollEvents
-  runEmulator
+  stepFrame
   unless (Exit `elem` intents) (appLoop 0 renderer window)
 
 eventsToIntents :: [SDL.Event] -> Set Intent

@@ -52,13 +52,11 @@ parse :: BS.ByteString -> IO Cartridge
 parse bs = do
   let (INesFileHeader _ numPrg numChr ctrl1 ctrl2 _) = parseHeader bs
   let prgOffset = numPrg * 0x4000
-  let prgRom = sliceBS 0x10 (0x10 + prgOffset) bs
+  let prgRom    = sliceBS 0x10 (0x10 + prgOffset) bs
   let chrOffset = numChr * 0x2000
   let chrRom = if numChr == 0
         then (BS.replicate 0x2000 0)
-        else sliceBS (0x10 + prgOffset)
-                     (0x10 + prgOffset + chrOffset)
-                     bs
+        else sliceBS (0x10 + prgOffset) (0x10 + prgOffset + chrOffset) bs
 
   chr  <- VU.thaw $ VU.fromList $ BS.unpack chrRom
   prg  <- VU.thaw $ VU.fromList $ BS.unpack prgRom

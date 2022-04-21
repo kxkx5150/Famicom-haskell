@@ -1,18 +1,30 @@
 
 module Emulator
-  ( runEmulator
+  ( step
+  , stepFrame
   , reset
   ) where
 
-import           Emulator.Nes
+import           Control.Monad
+import           Control.Monad.Loops
 import qualified Emulator.CPU                  as CPU
+import           Emulator.Mem
+import           Emulator.Nes
+import qualified Emulator.PPU                  as PPU
 
-runEmulator :: Emulator ()
-runEmulator = do
+step :: Emulator ()
+step = do
   cycles <- CPU.runCpu
-  return ()
+  replicateM_ (cycles * 3) PPU.step
+
+stepFrame :: Emulator ()
+stepFrame = do
+  count <- loadPpu frameCount
+  untilM_ step $ do
+    count' <- loadPpu frameCount
+    pure $ count' == (count + 1)
 
 reset :: Emulator ()
-reset = CPU.reset
+reset = CPU.reset >> PPU.reset
 
 

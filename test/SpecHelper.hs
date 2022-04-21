@@ -16,6 +16,6 @@ run filename readResult expected = do
   rom  <- BS.readFile filename
   initNes rom $ do
     reset
-    replicateM_ 300 runEmulator
+    replicateM_ 300 step
     result <- readResult
     liftIO $ assertEqual "Return code" expected result

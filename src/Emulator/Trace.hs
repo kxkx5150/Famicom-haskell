@@ -7,8 +7,8 @@ module Emulator.Trace
   ) where
 
 import           Data.Word
-import           Emulator.Nes
 import           Emulator.Mem
+import           Emulator.Nes
 import           Emulator.Opcode
 import           Text.Printf
 

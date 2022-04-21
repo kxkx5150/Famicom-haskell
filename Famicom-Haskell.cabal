@@ -16,6 +16,7 @@ library
                      , Emulator.Nes
                      , Emulator.Mem
                      , Emulator.CPU
+                     , Emulator.PPU
                      , Emulator.Rom
                      , Emulator.Mapper
                      , Emulator.Mapper.Mapper2
