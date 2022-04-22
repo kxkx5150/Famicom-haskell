@@ -8,6 +8,7 @@ WIP
 
 <br>
 
+stack build  
 stack exec -- Famicom-Haskell
 
 
