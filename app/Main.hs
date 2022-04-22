@@ -38,7 +38,7 @@ main = do
           rendererTargetTexture = True
         }
 
-  rom <- BS.readFile "sm.nes"
+  rom <- BS.readFile "j.nes"
   initNes rom $ do
     reset
     appLoop 0 renderer window
