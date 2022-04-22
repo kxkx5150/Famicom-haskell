@@ -364,6 +364,39 @@ renderingEnabled = do
 idle :: Emulator ()
 idle = pure ()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 getPaletteColor :: Word8 -> Color
 getPaletteColor index = palette V.! fromIntegral index
   where

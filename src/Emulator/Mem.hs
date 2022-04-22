@@ -48,8 +48,9 @@ import Emulator.Util.Util
 readCpuMemory8 :: Word16 -> Emulator Word8
 readCpuMemory8 addr
   | addr < 0x2000 = readMem addr
-  | addr < 0x4000 = readPPURegister $ 0x2000 + addr `rem` 8
-  | addr == 0x4014 = readPPURegister addr
+  | addr == 0x2002 = readPPURegister $ 0x2000 + addr `rem` 8
+  | addr == 0x2007 = readPPURegister $ 0x2000 + addr `rem` 8
+  | addr == 0x4014 = pure 0
   | addr == 0x4015 = pure 0
   | addr == 0x4016 = pure 0
   | addr == 0x4017 = pure 0
@@ -60,7 +61,7 @@ readCpuMemory8 addr
 writeCpuMemory8 :: Word16 -> Word8 -> Emulator ()
 writeCpuMemory8 addr value
   | addr < 0x2000 = writeMem addr value
-  | addr < 0x4000 = writePPURegister (0x2000 + addr `rem` 8) value
+  | 0x2000 <= addr && addr <= 0x2007 = writePPURegister (0x2000 + addr `rem` 8) value
   | addr == 0x4014 = writeDMA value
   | addr == 0x4016 = pure ()
   | addr >= 0x4000 && addr <= 0x4017 = pure ()
@@ -91,13 +92,6 @@ storePpu field v = with (field . ppu) (`modifyIORef'` const v)
 modifyPpu :: (PPU -> IORef b) -> (b -> b) -> Emulator ()
 modifyPpu field v = with (field . ppu) (`modifyIORef'` v)
 
-
-
-
-
-
-
-
 writeDMA :: Word8 -> Emulator ()
 writeDMA v = do
   let startingAddr = toWord16 v `shiftL` 8
@@ -110,11 +104,6 @@ writeDMA v = do
         with ppu $ \ppu -> VUM.write (oamData ppu) (toInt oamA) oamV
         modifyPpu oamAddress (+ 1)
     )
-
-readOAMData' :: Emulator Word8
-readOAMData' = do
-  addr <- loadPpu oamAddress
-  with ppu $ \ppu -> VUM.read (oamData ppu) (fromIntegral addr `rem` 0x0800)
 
 readOAMData :: Word16 -> Emulator Word8
 readOAMData addr =
@@ -136,6 +125,43 @@ writeMapper :: Word16 -> Word8 -> Emulator ()
 writeMapper addr value =
   with mapper $ \mapper -> Mapper.write mapper addr value
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+readPPURegister :: Word16 -> Emulator Word8
+readPPURegister addr = case addr of
+  0x2002 -> readStatus
+  0x2007 -> readData
+
+writePPURegister :: Word16 -> Word8 -> Emulator ()
+writePPURegister addr v = do
+  storePpu ppuRegister v
+  case addr of
+    0x2000 -> writeControl v
+    0x2001 -> writeMask v
+    0x2003 -> writeOAMAddress v
+    0x2004 -> writeOAMData v
+    0x2005 -> writeScroll v
+    0x2006 -> writeAddress v
+    0x2007 -> writeData v
+
+
+
+
+
+
+
 toggleNmi :: Bool -> Emulator ()
 toggleNmi occurred = do
   storePpu nmiOccurred occurred
@@ -145,16 +171,6 @@ toggleNmi occurred = do
   let nmi = output && occurred
   when (nmi && not previous) $ storePpu nmiDelay 15
   storePpu nmiPrevious nmi
-
-
-
-
-
-
-
-
-
-
 
 readPpuMemory :: Word16 -> Emulator Word8
 readPpuMemory addr
@@ -173,31 +189,6 @@ writePPUMemory addr v
   | otherwise = error $ "Erroneous write detected at " ++ show addr ++ "!"
   where
     addr' = addr `rem` 0x4000
-
-
-
-
-
-
-readPPURegister :: Word16 -> Emulator Word8
-readPPURegister addr = case addr of
-  0x2002 -> readStatus
-  0x2004 -> readOAMData'
-  0x2007 -> readData
-  other -> pure 0
-
-writePPURegister :: Word16 -> Word8 -> Emulator ()
-writePPURegister addr v = do
-  storePpu ppuRegister v
-  case addr of
-    0x2000 -> writeControl v
-    0x2001 -> writeMask v
-    0x2003 -> writeOAMAddress v
-    0x2004 -> writeOAMData v
-    0x2005 -> writeScroll v
-    0x2006 -> writeAddress v
-    0x2007 -> writeData v
-    _ -> error $ "Erroneous write detected at " ++ show addr ++ "!"
 
 writeNametableData :: Word16 -> Word8 -> Emulator ()
 writeNametableData addr v = do
