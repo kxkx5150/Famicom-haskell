@@ -5,7 +5,6 @@ module Emulator.PPU
 where
 
 import Control.Monad
--- import           Control.Monad.IO.Class (liftIO)
 import Data.Bits
   ( shiftL,
     shiftR,
@@ -364,39 +363,6 @@ renderingEnabled = do
 idle :: Emulator ()
 idle = pure ()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 getPaletteColor :: Word8 -> Color
 getPaletteColor index = palette V.! fromIntegral index
   where
@@ -465,4 +431,5 @@ getPaletteColor index = palette V.! fromIntegral index
           (175, 229, 234),
           (182, 182, 182),
           (0, 0, 0),
-          (0, 0, 0)]
+          (0, 0, 0)
+        ]

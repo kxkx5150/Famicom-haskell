@@ -34,9 +34,9 @@ instance Show Trace where
 mkTrace :: Opcode -> Emulator Trace
 mkTrace op = do
   pcv <- loadReg pc
-  a0 <- readCpuMemory8 pcv
-  a1 <- readCpuMemory8 (pcv + 1)
-  a2 <- readCpuMemory8 (pcv + 2)
+  a0 <- readMemPort pcv
+  a1 <- readMemPort (pcv + 1)
+  a2 <- readMemPort (pcv + 2)
   spv <- loadReg sp
   av <- loadReg a
   xv <- loadReg x

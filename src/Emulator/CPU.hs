@@ -68,7 +68,7 @@ reset = do
 loadOp :: Emulator Opcode
 loadOp = do
   pcv <- loadReg pc
-  av <- readCpuMemory8 pcv
+  av <- readMemPort pcv
   pure $ decodeOpcode av
 
 incPc :: Opcode -> Emulator ()
@@ -108,16 +108,16 @@ getAddr mode = case mode of
   IND -> do
     pcv <- loadReg pc
     addr <- readMemW (pcv + 1)
-    lo <- readCpuMemory8 addr
-    hi <- readCpuMemory8 $ (addr .&. 0xFF00) .|. toWord16 (toWord8 addr + 1)
+    lo <- readMemPort addr
+    hi <- readMemPort $ (addr .&. 0xFF00) .|. toWord16 (toWord8 addr + 1)
     pure (False, makeW16 lo hi)
   IZY -> do
     pcv <- loadReg pc
     yv <- loadReg y
-    v <- readCpuMemory8 $ pcv + 1
-    lo <- readCpuMemory8 (toWord16 v)
+    v <- readMemPort $ pcv + 1
+    lo <- readMemPort (toWord16 v)
     hi <-
-      readCpuMemory8 $
+      readMemPort $
         ((toWord16 v) .&. 0xFF00)
           .|. toWord16
             (toWord8 (toWord16 v) + 1)
@@ -127,10 +127,10 @@ getAddr mode = case mode of
   IZX -> do
     pcv <- loadReg pc
     xv <- loadReg x
-    v <- readCpuMemory8 $ pcv + 1
-    lo <- readCpuMemory8 (toWord16 (v + xv))
+    v <- readMemPort $ pcv + 1
+    lo <- readMemPort (toWord16 (v + xv))
     hi <-
-      readCpuMemory8 $
+      readMemPort $
         ((toWord16 (v + xv)) .&. 0xFF00)
           .|. toWord16
             (toWord8 (toWord16 (v + xv)) + 1)
@@ -143,24 +143,24 @@ getAddr mode = case mode of
     pure (False, pcv + 2 + offset8 - diff)
   ZP -> do
     pcv <- loadReg pc
-    v <- readCpuMemory8 (pcv + 1)
+    v <- readMemPort (pcv + 1)
     pure (False, toWord16 v)
   ZPX -> do
     pcv <- loadReg pc
     xv <- loadReg x
-    v <- readCpuMemory8 (pcv + 1)
+    v <- readMemPort (pcv + 1)
     pure (False, toWord16 $ v + xv)
   ZPY -> do
     pcv <- loadReg pc
     yv <- loadReg y
-    v <- readCpuMemory8 (pcv + 1)
+    v <- readMemPort (pcv + 1)
     pure (False, toWord16 $ v + yv)
 
 execOp :: Opcode -> Word16 -> Emulator ()
 execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   ADC -> do
     av <- loadReg a
-    bv <- readCpuMemory8 addr
+    bv <- readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     storeReg a (av + bv + cv)
     av' <- loadReg a
@@ -172,20 +172,20 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag Overflow doesOverflow
   AND -> do
     av <- loadReg a
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
   ASL -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
   BCC -> do
     branch (not <$> getFlag Carry) addr
@@ -194,7 +194,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   BEQ -> do
     branch (getFlag Zero) addr
   BIT -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     -- setV $ (v `shiftR` 6) .&. 1
     setV v
     av <- loadReg a
@@ -227,21 +227,21 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   CLV -> do
     setFlag Overflow False
   CMP -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     compare av v
   CPX -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     xv <- loadReg x
     compare xv v
   CPY -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     yv <- loadReg y
     compare yv v
   DEC -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     let value = v - 1
-    writeCpuMemory8 addr value
+    writeMemPort addr value
     setZN value
   DEX -> do
     v <- loadReg x
@@ -254,15 +254,15 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     storeReg y value
     setZN value
   EOR -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     let newAv = av `xor` v
     storeReg a newAv
     setZN newAv
   INC -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     let value = v + 1
-    writeCpuMemory8 addr value
+    writeMemPort addr value
     setZN value
   INX -> do
     v <- loadReg x
@@ -281,27 +281,27 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     pushW $ pcv - 1
     storeReg pc addr
   LDA -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg a v
     setZN v
   LDX -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg x v
     setZN v
   LDY -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg y v
     setZN v
   LSR -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
   NOP -> do
     pure ()
@@ -319,7 +319,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     v <- pull
     storeReg p ((v .&. 0xEF) .|. 0x20)
   ORA -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     let newAv = av .|. v
     storeReg a newAv
@@ -335,28 +335,28 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   ROR -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
   ROL -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
   SBC -> do
     av <- loadReg a
-    bv <- readCpuMemory8 addr
+    bv <- readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     storeReg a (av - bv - (1 - cv))
     av' <- loadReg a
@@ -374,11 +374,11 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag InterruptDisable True
   STA -> do
     av <- loadReg a
-    writeCpuMemory8 addr av
+    writeMemPort addr av
   STX -> do
-    loadReg x >>= writeCpuMemory8 addr
+    loadReg x >>= writeMemPort addr
   STY -> do
-    loadReg y >>= writeCpuMemory8 addr
+    loadReg y >>= writeMemPort addr
   TAX -> do
     av <- loadReg a
     storeReg x av
@@ -410,31 +410,31 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   KIL -> do
     pure ()
   LAX -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg a v
     storeReg x v
     setZN v
   SAX -> do
     av <- loadReg a
     xv <- loadReg x
-    writeCpuMemory8 addr (av .&. xv)
+    writeMemPort addr (av .&. xv)
   DCP -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     let value = v - 1
-    writeCpuMemory8 addr value
+    writeMemPort addr value
     setZN value
 
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     compare av v
   ISC -> do
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     let value = v + 1
-    writeCpuMemory8 addr value
+    writeMemPort addr value
     setZN value
 
     av <- loadReg a
-    bv <- readCpuMemory8 addr
+    bv <- readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     storeReg a (av - bv - (1 - cv))
     av' <- loadReg a
@@ -447,34 +447,34 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   RLA -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ (v `shiftR` 7) .&. 1)
     let shiftedV = (v `shiftL` 1) .|. cv
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
 
     av <- loadReg a
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
   RRA -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     setFlag Carry (toEnum $ fromIntegral $ v .&. 1)
     let shiftedV = (v `shiftR` 1) .|. (cv `shiftL` 7)
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
 
     av <- loadReg a
-    bv <- readCpuMemory8 addr
+    bv <- readMemPort addr
     cv <- (fromIntegral . fromEnum) <$> getFlag Carry
     storeReg a (av + bv + cv)
     av' <- loadReg a
@@ -487,16 +487,16 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   SLO -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
     let i = (v `shiftR` 7) .&. 1
     setFlag Carry (toEnum . fromIntegral $ i)
     let shiftedV = v `shiftL` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
 
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     let newAv = av .|. v
     storeReg a newAv
@@ -504,23 +504,23 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   SRE -> do
     v <- case mode of
       ACC -> loadReg a
-      _ -> readCpuMemory8 addr
+      _ -> readMemPort addr
 
     setFlag Carry (toEnum . fromIntegral $ v .&. 1)
     let shiftedV = v `shiftR` 1
     case mode of
       ACC -> storeReg a shiftedV
-      _ -> writeCpuMemory8 addr shiftedV
+      _ -> writeMemPort addr shiftedV
     setZN shiftedV
 
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     av <- loadReg a
     let newAv = av `xor` v
     storeReg a newAv
     setZN newAv
   ANC -> do
     av <- loadReg a
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     storeReg a (av .&. v)
     av' <- loadReg a
     setZN av'
@@ -542,10 +542,10 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     let result = xv .&. (toWord8 addr + 1)
     let temp = (toWord8 addr - yv) .&. 255
     if yv + temp <= 255
-      then writeCpuMemory8 addr result
+      then writeMemPort addr result
       else do
-        v <- readCpuMemory8 addr
-        writeCpuMemory8 addr v
+        v <- readMemPort addr
+        writeMemPort addr v
   SHY -> do
     pure ()
   LAS -> do
@@ -553,7 +553,7 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
   AXS -> do
     av <- loadReg a
     xv <- loadReg x
-    v <- readCpuMemory8 addr
+    v <- readMemPort addr
     let anded = av .&. xv
     let newXv = anded - v
     storeReg x newXv
@@ -590,7 +590,7 @@ pull = do
   spv <- loadReg sp
   storeReg sp (spv + 1)
   let i = 0x100 .|. (toWord16 spv + 1)
-  readCpuMemory8 i
+  readMemPort i
 
 pullW :: Emulator Word16
 pullW = do
@@ -602,7 +602,7 @@ push :: Word8 -> Emulator ()
 push v = do
   spv <- loadReg sp
   let i = 0x100 .|. toWord16 spv
-  writeCpuMemory8 i v
+  writeMemPort i v
   storeReg sp (spv - 1)
 
 pushW :: Word16 -> Emulator ()

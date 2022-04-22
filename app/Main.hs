@@ -39,7 +39,6 @@ main = do
         }
 
   rom <- BS.readFile "sm.nes"
-
   initNes rom $ do
     reset
     appLoop 0 renderer window

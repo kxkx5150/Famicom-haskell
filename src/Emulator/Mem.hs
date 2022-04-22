@@ -1,5 +1,5 @@
 module Emulator.Mem
-  ( readCpuMemory8,
+  ( readMemPort,
     readMemW,
     loadPpu,
     storePpu,
@@ -11,7 +11,7 @@ module Emulator.Mem
     writeScreen,
     loadScreen,
     toggleNmi,
-    writeCpuMemory8,
+    writeMemPort,
     writeDMA,
     writeOAMData,
     writeOAMAddress,
@@ -45,8 +45,8 @@ import Emulator.Nes
 import Emulator.Rom as Cartridge
 import Emulator.Util.Util
 
-readCpuMemory8 :: Word16 -> Emulator Word8
-readCpuMemory8 addr
+readMemPort :: Word16 -> Emulator Word8
+readMemPort addr
   | addr < 0x2000 = readMem addr
   | addr == 0x2002 = readPPURegister $ 0x2000 + addr `rem` 8
   | addr == 0x2007 = readPPURegister $ 0x2000 + addr `rem` 8
@@ -58,8 +58,8 @@ readCpuMemory8 addr
   | addr >= 0x6000 = readMapper addr
   | otherwise = error $ "memory read error at " ++ show addr ++ "!"
 
-writeCpuMemory8 :: Word16 -> Word8 -> Emulator ()
-writeCpuMemory8 addr value
+writeMemPort :: Word16 -> Word8 -> Emulator ()
+writeMemPort addr value
   | addr < 0x2000 = writeMem addr value
   | 0x2000 <= addr && addr <= 0x2007 = writePPURegister (0x2000 + addr `rem` 8) value
   | addr == 0x4014 = writeDMA value
@@ -75,22 +75,22 @@ readMem addr =
 
 readMemW :: Word16 -> Emulator Word16
 readMemW addr = do
-  lo <- readCpuMemory8 addr
-  hi <- readCpuMemory8 (addr + 1)
+  lo <- readMemPort addr
+  hi <- readMemPort (addr + 1)
   pure $ makeW16 lo hi
 
 writeMem :: Word16 -> Word8 -> Emulator ()
 writeMem addr v =
   with cpu $ \cpu -> VUM.write (ram cpu) (fromIntegral addr `rem` 0x0800) v
 
-loadPpu :: (PPU -> IORef b) -> Emulator b
-loadPpu field = with (field . ppu) readIORef
+readMapper :: Word16 -> Emulator Word8
+readMapper addr = with mapper $ \mapper -> Mapper.read mapper addr
 
-storePpu :: (PPU -> IORef b) -> b -> Emulator ()
-storePpu field v = with (field . ppu) (`modifyIORef'` const v)
+writeMapper :: Word16 -> Word8 -> Emulator ()
+writeMapper addr value =
+  with mapper $ \mapper -> Mapper.write mapper addr value
 
-modifyPpu :: (PPU -> IORef b) -> (b -> b) -> Emulator ()
-modifyPpu field v = with (field . ppu) (`modifyIORef'` v)
+-- DMA
 
 writeDMA :: Word8 -> Emulator ()
 writeDMA v = do
@@ -100,7 +100,7 @@ writeDMA v = do
     addresses
     ( \addr -> do
         oamA <- loadPpu oamAddress
-        oamV <- readCpuMemory8 addr
+        oamV <- readMemPort addr
         with ppu $ \ppu -> VUM.write (oamData ppu) (toInt oamA) oamV
         modifyPpu oamAddress (+ 1)
     )
@@ -118,26 +118,16 @@ writeOAMData v = do
   with ppu $ \ppu -> VUM.write (oamData ppu) (toInt addr) v
   modifyPpu oamAddress (+ 1)
 
-readMapper :: Word16 -> Emulator Word8
-readMapper addr = with mapper $ \mapper -> Mapper.read mapper addr
+-- PPU Port
 
-writeMapper :: Word16 -> Word8 -> Emulator ()
-writeMapper addr value =
-  with mapper $ \mapper -> Mapper.write mapper addr value
+loadPpu :: (PPU -> IORef b) -> Emulator b
+loadPpu field = with (field . ppu) readIORef
 
+storePpu :: (PPU -> IORef b) -> b -> Emulator ()
+storePpu field v = with (field . ppu) (`modifyIORef'` const v)
 
-
-
-
-
-
-
-
-
-
-
-
-
+modifyPpu :: (PPU -> IORef b) -> (b -> b) -> Emulator ()
+modifyPpu field v = with (field . ppu) (`modifyIORef'` v)
 
 readPPURegister :: Word16 -> Emulator Word8
 readPPURegister addr = case addr of
@@ -155,22 +145,6 @@ writePPURegister addr v = do
     0x2005 -> writeScroll v
     0x2006 -> writeAddress v
     0x2007 -> writeData v
-
-
-
-
-
-
-
-toggleNmi :: Bool -> Emulator ()
-toggleNmi occurred = do
-  storePpu nmiOccurred occurred
-  output <- loadPpu nmiOutput
-  occurred <- loadPpu nmiOccurred
-  previous <- loadPpu nmiPrevious
-  let nmi = output && occurred
-  when (nmi && not previous) $ storePpu nmiDelay 15
-  storePpu nmiPrevious nmi
 
 readPpuMemory :: Word16 -> Emulator Word8
 readPpuMemory addr
@@ -352,5 +326,13 @@ writeScreen (x, y) (r, g, b) = with ppu $ \ppu -> do
   VUM.write (screen ppu) (offset + 1) g
   VUM.write (screen ppu) (offset + 2) b
 
-
+toggleNmi :: Bool -> Emulator ()
+toggleNmi occurred = do
+  storePpu nmiOccurred occurred
+  output <- loadPpu nmiOutput
+  occurred <- loadPpu nmiOccurred
+  previous <- loadPpu nmiPrevious
+  let nmi = output && occurred
+  when (nmi && not previous) $ storePpu nmiDelay 15
+  storePpu nmiPrevious nmi
 
