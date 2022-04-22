@@ -11,7 +11,7 @@ import           Data.IORef
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import           Data.Word
 import           Emulator.Rom          as Cartridge
-import           Emulator.Util
+import           Emulator.Util.Util
 import           Prelude                     hiding (read)
 
 data Mapper2 = Mapper2

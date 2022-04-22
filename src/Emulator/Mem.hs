@@ -43,7 +43,7 @@ import Data.Word
 import qualified Emulator.Mapper as Mapper
 import Emulator.Nes
 import Emulator.Rom as Cartridge
-import Emulator.Util
+import Emulator.Util.Util
 
 readCpuMemory8 :: Word16 -> Emulator Word8
 readCpuMemory8 addr

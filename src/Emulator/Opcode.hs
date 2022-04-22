@@ -8,7 +8,7 @@ where
 
 import Data.List (intersperse)
 import Data.Word
-import Emulator.Util
+import Emulator.Util.Util
 
 data AddressMode
   = IMP

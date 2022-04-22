@@ -11,12 +11,12 @@ import Data.Word
 import Emulator.Mem
 import Emulator.Nes
 import Emulator.Opcode
-import Emulator.Trace
+import Emulator.Util.Trace
   ( Trace,
     mkTrace,
     renderTrace,
   )
-import Emulator.Util
+import Emulator.Util.Util
 import Prelude hiding
   ( and,
     compare,
@@ -36,7 +36,7 @@ data Flag
 runCpu :: Emulator Int
 runCpu = do
   startingCycles <- loadReg cpuCycles
-  handleInterrupts
+  handleIrq
   opcode <- loadOp
   (pageCrossed, addr) <- getAddr (mode opcode)
   incPc opcode
@@ -48,7 +48,7 @@ runCpu = do
 runCpuT :: Emulator (Int, Trace)
 runCpuT = do
   startingCycles <- loadReg cpuCycles
-  handleInterrupts
+  handleIrq
   opcode <- loadOp
   trace <- mkTrace opcode
   (pageCrossed, addr) <- getAddr (mode opcode)
@@ -70,6 +70,15 @@ loadOp = do
   pcv <- loadReg pc
   av <- readCpuMemory8 pcv
   pure $ decodeOpcode av
+
+incPc :: Opcode -> Emulator ()
+incPc opcode = modReg pc (+ instrLength)
+  where
+    instrLength = fromIntegral $ len opcode
+
+getCycles :: Opcode -> Bool -> Int
+getCycles opcode pageCrossed =
+  if pageCrossed then pageCrossCycles opcode + cycles opcode else cycles opcode
 
 getAddr :: AddressMode -> Emulator (Bool, Word16)
 getAddr mode = case mode of
@@ -146,15 +155,6 @@ getAddr mode = case mode of
     yv <- loadReg y
     v <- readCpuMemory8 (pcv + 1)
     pure (False, toWord16 $ v + yv)
-
-incPc :: Opcode -> Emulator ()
-incPc opcode = modReg pc (+ instrLength)
-  where
-    instrLength = fromIntegral $ len opcode
-
-getCycles :: Opcode -> Bool -> Int
-getCycles opcode pageCrossed =
-  if pageCrossed then pageCrossCycles opcode + cycles opcode else cycles opcode
 
 execOp :: Opcode -> Word16 -> Emulator ()
 execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
@@ -560,8 +560,8 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag Carry (anded >= v)
     setZN newXv
 
-handleInterrupts :: Emulator ()
-handleInterrupts = do
+handleIrq :: Emulator ()
+handleIrq = do
   int <- loadReg interrupt
   case int of
     Just NMI -> do

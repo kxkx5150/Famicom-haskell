@@ -5,7 +5,7 @@ module Nestest.Parsing (
 
 import           Data.Word
 import           Emulator.Opcode
-import           Emulator.Trace
+import           Emulator.Util.Trace
 import           Numeric            (readHex)
 import           Text.Parsec
 import           Text.Parsec.String (Parser)

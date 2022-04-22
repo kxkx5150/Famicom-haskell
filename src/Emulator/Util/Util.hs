@@ -1,4 +1,4 @@
-module Emulator.Util
+module Emulator.Util.Util
   ( prettifyWordW,
     prettifyWord,
     makeW16,

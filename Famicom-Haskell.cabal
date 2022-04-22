@@ -21,8 +21,8 @@ library
                      , Emulator.Mapper
                      , Emulator.Mapper.Mapper2
                      , Emulator.Opcode
-                     , Emulator.Util
-                     , Emulator.Trace
+                     , Emulator.Util.Util
+                     , Emulator.Util.Trace
   default-extensions: Strict
   ghc-options:       -O2
                      -fno-warn-name-shadowing

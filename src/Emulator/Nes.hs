@@ -48,7 +48,7 @@ import qualified Data.Vector.Storable.Mutable as VUM
 import Data.Word
 import qualified Emulator.Mapper as Mapper
 import Emulator.Rom as Cartridge
-import Emulator.Util
+import Emulator.Util.Util
 import Prelude hiding
   ( read,
     replicate,

@@ -6,8 +6,8 @@ import qualified Data.ByteString        as BS
 import           Emulator.Nes
 import           Emulator.CPU           (runCpuT)
 import           Emulator.Mem
-import qualified Emulator.Trace         as Trace
-import           Emulator.Util          (prettifyWordW)
+import qualified Emulator.Util.Trace         as Trace
+import           Emulator.Util.Util          (prettifyWordW)
 import           Nestest.Parsing        (parseTrace)
 import           Test.Tasty
 import           Test.Tasty.HUnit

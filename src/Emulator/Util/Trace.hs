@@ -1,6 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Emulator.Trace
+module Emulator.Util.Trace
   ( Trace (..),
     renderTrace,
     mkTrace,

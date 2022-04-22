@@ -17,7 +17,7 @@ import qualified Data.Vector as V
 import Data.Word
 import Emulator.Mem
 import Emulator.Nes
-import Emulator.Util
+import Emulator.Util.Util
 import Prelude hiding (cycle)
 
 reset :: Emulator ()
@@ -35,7 +35,7 @@ step = do
 
 tick :: Emulator Coords
 tick = do
-  handleInterrupts
+  handleIrq
 
   rendering <- renderingEnabled
   scanline' <- loadPpu scanline
@@ -63,8 +63,8 @@ tick = do
 
   pure (sc, cy)
 
-handleInterrupts :: Emulator ()
-handleInterrupts = do
+handleIrq :: Emulator ()
+handleIrq = do
   delay <- loadPpu nmiDelay
   when (delay > 0) $ do
     modifyPpu nmiDelay (subtract 1)
