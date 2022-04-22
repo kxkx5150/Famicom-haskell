@@ -36,6 +36,7 @@ data Flag
 runCpu :: Emulator Int
 runCpu = do
   startingCycles <- loadReg cpuCycles
+  handleInterrupts
   opcode <- loadOp
   (pageCrossed, addr) <- getAddr (mode opcode)
   incPc opcode
@@ -47,6 +48,7 @@ runCpu = do
 runCpuT :: Emulator (Int, Trace)
 runCpuT = do
   startingCycles <- loadReg cpuCycles
+  handleInterrupts
   opcode <- loadOp
   trace <- mkTrace opcode
   (pageCrossed, addr) <- getAddr (mode opcode)
@@ -558,21 +560,21 @@ execOp (Opcode _ mnemonic mode _ _ _) addr = case mnemonic of
     setFlag Carry (anded >= v)
     setZN newXv
 
--- handleInterrupts :: Emulator ()
--- handleInterrupts = do
---   int <- loadReg interrupt
---   case int of
---     Just NMI -> do
---       pcv <- loadReg pc
---       pushW pcv
---       p <- loadReg p
---       push $ p .|. 0x10
---       v <- readMemW 0xFFFA
---       storeReg pc v
---       modReg cpuCycles (+ 7)
---     Just IRQ -> error "not handling IRQ yet"
---     Nothing  -> pure ()
---   storeReg interrupt Nothing
+handleInterrupts :: Emulator ()
+handleInterrupts = do
+  int <- loadReg interrupt
+  case int of
+    Just NMI -> do
+      pcv <- loadReg pc
+      pushW pcv
+      p <- loadReg p
+      push $ p .|. 0x10
+      v <- readMemW 0xFFFA
+      storeReg pc v
+      modReg cpuCycles (+ 7)
+    Just IRQ -> error "not handling IRQ yet"
+    Nothing  -> pure ()
+  storeReg interrupt Nothing
 
 branch :: Emulator Bool -> Word16 -> Emulator ()
 branch cond addr = do

@@ -177,7 +177,7 @@ newCPU = do
   a <- newIORef 0x0
   x <- newIORef 0x0
   y <- newIORef 0x0
-  p <- newIORef 0x24 -- should this be 0x34?
+  p <- newIORef 0x24
   cycles <- newIORef 0
   interrupt <- newIORef Nothing
   ram <- VUM.replicate 65536 0x0

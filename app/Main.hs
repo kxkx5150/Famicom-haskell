@@ -15,6 +15,7 @@ import Emulator
     stepFrame,
   )
 import Emulator.Nes
+import Emulator.Mem
 import SDL
 import SDL.Time
 import System.Environment (getArgs)
@@ -37,7 +38,8 @@ main = do
           rendererTargetTexture = True
         }
 
-  rom <- BS.readFile "nestest.nes"
+  rom <- BS.readFile "sm.nes"
+
   initNes rom $ do
     reset
     appLoop 0 renderer window
@@ -46,7 +48,18 @@ appLoop :: Int -> SDL.Renderer -> SDL.Window -> Emulator ()
 appLoop frames renderer window = do
   intents <- eventsToIntents <$> SDL.pollEvents
   stepFrame
+  texture <- render renderer
+  copy renderer texture Nothing Nothing
+  SDL.present renderer
   unless (Exit `elem` intents) (appLoop 0 renderer window)
+
+render :: SDL.Renderer -> Emulator SDL.Texture
+render renderer = do
+  mv <- loadScreen
+  surface <- createRGBSurfaceFrom mv (V2 256 240) (256 * 3) SDL.RGB24
+  texture <- createTextureFromSurface renderer surface
+  SDL.freeSurface surface
+  pure texture
 
 eventsToIntents :: [SDL.Event] -> Set Intent
 eventsToIntents events =
