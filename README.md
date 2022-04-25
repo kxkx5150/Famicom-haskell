@@ -2,14 +2,52 @@
 
 ## NES Emulator
 
+no sound
+
+<br><br>
+
+## install ghcup
+
+HLS install  
+stack install  
+msys2 install  
+
+
+
 <br><br><br>
 
-WIP
+
+Windows Terminal (admin)
+<pre>
+stack exec -- pacman -Syu
+</pre>
 
 <br>
 
+Mingw haskell shell
+<pre>
+pacman -S mingw-w64-x86_64-SDL2
+pacman -S mingw-w64-x86_64-SDL2_mixer
+pacman -S mingw-w64-x86_64-SDL2_ttf
+</pre>
+
+<br>
+
+Windows Terminal (admin)
+<pre>
+stack install sdl2
+</pre>
+
+
+<br><br><br><br><br><br><br><br>
+
+
+vscode terminal
+
+<pre>
 stack build  
 stack exec -- Famicom-Haskell
+</pre>
 
 
 
